@@ -3,28 +3,10 @@
 const axios = require('axios');
 
 const urls = [
-  'https://sparkling-cherry.myepages.io/',
-  'https://sparkling-cherry.myepages.io/cart',
-  'https://sparkling-cherry.myepages.io/legal/Delivery-information',
-
-  'https://sparkling-cherry.myepages.io/app.bundle.js',
-  'https://sparkling-cherry.myepages.io/style.bundle.css',
-
-  'https://sparkling-cherry.myepages.io/category/56D9401F-9833-9448-C03F-D5809A92E038',
-  'https://sparkling-cherry.myepages.io/category/56D9401F-64E0-1C55-A9B7-D5809A92E038',
-
-  'https://sparkling-cherry.myepages.io/product/56D9401D-F1F0-901E-CC79-D5809A92E050',
-  'https://sparkling-cherry.myepages.io/product/56D9401D-17FB-33CF-0B8F-D5809A92E0F6',
-
-  'https://sparkling-cherry.myepages.io/api/pages/startpage?shop=sparkling-cherry',
-  'https://sparkling-cherry.myepages.io/api/products/56D9401D-17FB-33CF-0B8F-D5809A92E0F6?shop=sparkling-cherry',
-  'https://sparkling-cherry.myepages.io/api/categories/56D9401F-9833-9448-C03F-D5809A92E038?shop=sparkling-cherry',
-  'https://sparkling-cherry.myepages.io/api/products?shop=sparkling-cherry&sort=price-asc&resultsPerPage=12&page=1&categoryId=56D9401F-9833-9448-C03F-D5809A92E038',
-
-  'https://sparkling-cherry.myepages.io/storage/images/image?shop=sparkling-cherry&remote=https:%2F%2Fr2d2.epages.com%2FWebRoot%2FStore%2FShops%2Fsparkling-cherry%2FProducts%2Fshirt-round-woman-beige.jpg&width=620&height=620',
-  'https://sparkling-cherry.myepages.io/storage/images/image?shop=sparkling-cherry&remote=https:%2F%2Fr2d2.epages.com%2FWebRoot%2FStore%2FShops%2Fsparkling-cherry%2FProducts%2Fshirt-round-woman-beige.jpg&width=272&height=272',
-  'https://sparkling-cherry.myepages.io/storage/images/image?shop=sparkling-cherry&remote=https:%2F%2Fr2d2.epages.com%2FWebRoot%2FStore%2FShops%2Fsparkling-cherry%2FProducts%2Ftop-woman-blue.jpg&width=272&height=272',
-  'https://sparkling-cherry.myepages.io/storage/images/image?shop=sparkling-cherry&remote=https:%2F%2Fr2d2.epages.com%2FWebRoot%2FStore%2FShops%2Fsparkling-cherry%2FProducts%2Fpolo-woman-blue.jpg&width=272&height=272'
+  'http://192.168.99.100:8080/api/ping/auth/foobar',
+  'http://192.168.99.100:8080/api/ping/users/foobar',
+  'http://192.168.99.100:8081/api/ping/auth/foobar',
+  'http://192.168.99.100:8081/api/ping/users/foobar'
 ];
 const maxDelay = 1000;
 const concurrentStreams = 4;
@@ -46,14 +28,17 @@ function startRequestStream(index, maxTicks) {
       return axios({
         method: 'GET',
         url,
-        headers: {
-          'X-Benchmark': 'load-generator'
-        }
+        timestamp: process.hrtime()
       });
     })
-    .catch(res => console.log(res) || res)
+    .catch(res => res)
     .then(res => {
-      console.log(`[${index}] ${res.status} ${res.config.url}`);
+      if (res instanceof Error) {
+        console.log(`[${index}] --- >   ${res.message}`);
+      } else {
+        const duration = process.hrtime(res.config.timestamp);
+        console.log(`[${index}] ${res.status} > ${res.data} (${(duration[0] + duration[1] * 1e-9) * 1e3} ms)`);
+      }
       return startRequestStream(index, maxTicks);
     });
 }
