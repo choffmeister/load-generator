@@ -1,19 +1,18 @@
 'use strict';
 
 const axios = require('axios');
+const sprintf = require('sprintf-js').sprintf;
 
 const urls = [
-  'http://192.168.99.100:8080/api/ping/auth/foobar',
-  'http://192.168.99.100:8080/api/ping/users/foobar',
-  'http://192.168.99.100:8081/api/ping/auth/foobar',
-  'http://192.168.99.100:8081/api/ping/users/foobar'
+  'https://app.airfocus.io:8443/api/ping/system/cluster-node'
 ];
-const maxDelay = 1000;
-const concurrentStreams = 4;
+const maxDelay = 250;
+const concurrentStreams = 1;
+let nextId = 0;
 
-function delayRandom(maxTicks) {
+function delayRandom(maxTicks, fn) {
   const ticks = Math.round(Math.random() * maxTicks);
-  return new Promise(resolve => setTimeout(() => resolve(), ticks));
+  setTimeout(() => fn(), ticks);
 }
 
 function pickRandom(items) {
@@ -22,25 +21,31 @@ function pickRandom(items) {
 }
 
 function startRequestStream(index, maxTicks) {
-  return delayRandom(maxTicks)
-    .then(() => {
-      const url = pickRandom(urls);
-      return axios({
-        method: 'GET',
-        url,
-        timestamp: process.hrtime()
-      });
+  delayRandom(maxTicks, () => {
+    const url = pickRandom(urls);
+    const id = nextId++;
+
+    return axios({
+      method: 'POST',
+      data: sprintf('ping-%010i', id),
+      url,
+      timestamp: process.hrtime()
     })
     .catch(res => res)
     .then(res => {
       if (res instanceof Error) {
-        console.log(`[${index}] --- >   ${res.message}`);
+        console.log(sprintf('[---]              > %s', res.message));
       } else {
         const duration = process.hrtime(res.config.timestamp);
-        console.log(`[${index}] ${res.status} > ${res.data} (${(duration[0] + duration[1] * 1e-9) * 1e3} ms)`);
+        const durationMs = (duration[0] + duration[1] * 1e-9) * 1e3;
+
+        console.log(sprintf('[%3i] %9.2f ms > %s', res.status, durationMs, res.data));
       }
       return startRequestStream(index, maxTicks);
-    });
+    })
+  });
+
+  return null;
 }
 
 for (let i = 0; i < concurrentStreams; i++) {

@@ -9,6 +9,7 @@
   "author": "Christian Hoffmeister <mail@choffmeister.de> (http://choffmeister.de/)",
   "license": "ISC",
   "dependencies": {
-    "axios": "0.9.1"
+    "axios": "0.9.1",
+    "sprintf-js": "1.0.3"
   }
 }
